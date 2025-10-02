@@ -1,0 +1,272 @@
+# ==============================================================================
+# Configuracao Apache - Sistema de Consulta de Processos
+# {{APP_TITLE}}
+#
+# IMPORTANTE: Este ficheiro e um TEMPLATE gerado dinamicamente
+# NAO editar diretamente! Modificar o ficheiro .env e executar:
+# php apache/generate-config.php
+#
+# Gerado automaticamente a partir de .env
+# ==============================================================================
+
+# ==============================================================================
+# Configuracoes Globais de Seguranca
+# ==============================================================================
+
+# Ocultar informacao do servidor
+ServerTokens Prod
+ServerSignature Off
+
+{{#IF HTTPS_PORT}}
+# ==============================================================================
+# VirtualHost HTTPS (Producao)
+# ==============================================================================
+
+<VirtualHost *:{{HTTPS_PORT}}>
+    ServerName {{SERVER_NAME}}
+
+    DocumentRoot {{DOCUMENT_ROOT}}
+    DirectoryIndex index.php index.html
+
+    # ==========================================================================
+    # Headers de Seguranca
+    # ==========================================================================
+
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+    # Content Security Policy - Gerido dinamicamente pelo PHP (security.php)
+    # NAO adicionar CSP aqui para evitar conflitos
+
+    # Strict Transport Security (HSTS) - Forcar HTTPS
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Remover informacao do servidor (Headers apenas)
+    Header unset X-Powered-By
+    Header unset Server
+
+    # ==========================================================================
+    # Configuracao de Diretorios
+    # ==========================================================================
+
+    <Directory {{DOCUMENT_ROOT}}>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+
+        # Bloquear acesso a ficheiros sensiveis
+        <FilesMatch "\\.(log|conf|env|ini|sh|bak|zip|tar|gz|sql)$">
+            Require all denied
+        </FilesMatch>
+    </Directory>
+
+    # Diretorio /exp - Link Simbolico para Documentos
+    <Directory {{DOCUMENT_ROOT}}/exp>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+
+        # Bloquear acesso direto a ficheiros - forcar download via download.php
+        <FilesMatch "\.(zip|pdf|doc|docx|xls|xlsx)$">
+            Require all denied
+        </FilesMatch>
+    </Directory>
+
+    # ==========================================================================
+    # Paginas de Erro Personalizadas
+    # ==========================================================================
+
+    ErrorDocument 404 /404.php
+    ErrorDocument 403 /403.php
+    ErrorDocument 500 /500.php
+
+    # ==========================================================================
+    # Compressao GZIP
+    # ==========================================================================
+
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+        AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+        AddOutputFilterByType DEFLATE application/json application/xml
+        AddOutputFilterByType DEFLATE image/svg+xml
+
+        # Comprimir tambem para proxies
+        Header append Vary Accept-Encoding
+    </IfModule>
+
+    # ==========================================================================
+    # Cache para Assets Estaticos
+    # ==========================================================================
+
+    <IfModule mod_expires.c>
+        ExpiresActive On
+
+        # Imagens
+        ExpiresByType image/jpeg "access plus 1 year"
+        ExpiresByType image/png "access plus 1 year"
+        ExpiresByType image/gif "access plus 1 year"
+        ExpiresByType image/svg+xml "access plus 1 year"
+        ExpiresByType image/webp "access plus 1 year"
+        ExpiresByType image/x-icon "access plus 1 year"
+
+        # CSS e JavaScript
+        ExpiresByType text/css "access plus 1 month"
+        ExpiresByType application/javascript "access plus 1 month"
+        ExpiresByType text/javascript "access plus 1 month"
+
+        # Fontes
+        ExpiresByType font/woff "access plus 1 year"
+        ExpiresByType font/woff2 "access plus 1 year"
+        ExpiresByType application/font-woff "access plus 1 year"
+        ExpiresByType application/font-woff2 "access plus 1 year"
+
+        # HTML - sem cache para conteudo dinamico
+        ExpiresByType text/html "access plus 0 seconds"
+    </IfModule>
+
+    # Cache-Control Headers
+    <IfModule mod_headers.c>
+        # Cache para assets com hash/versao
+        <FilesMatch "\.(jpg|jpeg|png|gif|svg|webp|ico|css|js|woff|woff2)$">
+            Header set Cache-Control "public, max-age=31536000, immutable"
+        </FilesMatch>
+
+        # Sem cache para HTML e PHP
+        <FilesMatch "\.(html|php)$">
+            Header set Cache-Control "no-cache, no-store, must-revalidate"
+            Header set Pragma "no-cache"
+            Header set Expires "0"
+        </FilesMatch>
+    </IfModule>
+
+    # ==========================================================================
+    # Configuracao SSL/TLS
+    # ==========================================================================
+
+    SSLEngine on
+    SSLCertificateFile    {{SSL_CERT_FILE}}
+    SSLCertificateKeyFile {{SSL_KEY_FILE}}
+
+    # Protocolo TLS moderno e seguro
+    SSLProtocol -all +TLSv1.2 +TLSv1.3
+    SSLCipherSuite ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
+    SSLHonorCipherOrder on
+
+    # ==========================================================================
+    # Logs
+    # ==========================================================================
+
+    ErrorLog {{APACHE_LOG_DIR}}/acesso_error.log
+    CustomLog {{APACHE_LOG_DIR}}/acesso_access.log combined
+
+    # Log adicional para seguranca (com informacao SSL)
+    CustomLog {{APACHE_LOG_DIR}}/acesso_security.log "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\" %{SSL_PROTOCOL}x %{SSL_CIPHER}x"
+</VirtualHost>
+
+# ==============================================================================
+# Redirecionamento HTTP -> HTTPS
+# ==============================================================================
+
+<VirtualHost *:{{HTTP_PORT}}>
+    ServerName {{SERVER_NAME}}
+    Redirect permanent / https://{{SERVER_NAME}}/
+</VirtualHost>
+{{/IF}}
+
+{{#UNLESS HTTPS_PORT}}
+# ==============================================================================
+# VirtualHost HTTP (Desenvolvimento)
+# ==============================================================================
+
+<VirtualHost *:{{HTTP_PORT}}>
+    ServerName {{SERVER_NAME}}
+
+    DocumentRoot {{DOCUMENT_ROOT}}
+    DirectoryIndex index.php index.html
+
+    # ==========================================================================
+    # Headers de Seguranca (sem HSTS para desenvolvimento)
+    # ==========================================================================
+
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Content Security Policy - Gerido dinamicamente pelo PHP (security.php)
+    # NAO adicionar CSP aqui para evitar conflitos
+
+    # Remover informacao do servidor (Headers apenas)
+    Header unset X-Powered-By
+    Header unset Server
+
+    # ==========================================================================
+    # Configuracao de Diretorios
+    # ==========================================================================
+
+    <Directory {{DOCUMENT_ROOT}}>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+
+        # Bloquear acesso a ficheiros sensiveis
+        <FilesMatch "\\.(log|conf|env|ini|sh|bak|zip|tar|gz|sql)$">
+            Require all denied
+        </FilesMatch>
+    </Directory>
+
+    # Diretorio /exp - Link Simbolico para Documentos
+    <Directory {{DOCUMENT_ROOT}}/exp>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+
+        # Bloquear acesso direto a ficheiros - forcar download via download.php
+        <FilesMatch "\.(zip|pdf|doc|docx|xls|xlsx)$">
+            Require all denied
+        </FilesMatch>
+    </Directory>
+
+    # ==========================================================================
+    # Paginas de Erro Personalizadas
+    # ==========================================================================
+
+    ErrorDocument 404 /404.php
+    ErrorDocument 403 /403.php
+    ErrorDocument 500 /500.php
+
+    # ==========================================================================
+    # Compressao GZIP
+    # ==========================================================================
+
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+        AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+        AddOutputFilterByType DEFLATE application/json application/xml
+        AddOutputFilterByType DEFLATE image/svg+xml
+
+        Header append Vary Accept-Encoding
+    </IfModule>
+
+    # ==========================================================================
+    # Cache Desativado (Desenvolvimento)
+    # ==========================================================================
+
+    <IfModule mod_headers.c>
+        # Sem cache para facilitar desenvolvimento
+        <FilesMatch "\.(html|php|css|js)$">
+            Header set Cache-Control "no-cache, no-store, must-revalidate"
+            Header set Pragma "no-cache"
+            Header set Expires "0"
+        </FilesMatch>
+    </IfModule>
+
+    # ==========================================================================
+    # Logs
+    # ==========================================================================
+
+    ErrorLog {{APACHE_LOG_DIR}}/acesso_error.log
+    CustomLog {{APACHE_LOG_DIR}}/acesso_access.log combined
+</VirtualHost>
+{{/UNLESS}}
