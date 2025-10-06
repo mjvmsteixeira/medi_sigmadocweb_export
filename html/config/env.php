@@ -117,7 +117,7 @@ define('LOGO_HEIGHT', env('LOGO_HEIGHT', '50px'));
 
 // Interface e Branding - Footer
 define('FOOTER_DEVELOPER', env('FOOTER_DEVELOPER', '@mjvmst'));
-define('FOOTER_VERSION', env('FOOTER_VERSION', 'v3.0'));
+define('FOOTER_VERSION', env('FOOTER_VERSION', 'v3.1'));
 define('FOOTER_ORGANIZATION', env('FOOTER_ORGANIZATION', 'Municipio'));
 define('FOOTER_YEAR', env('FOOTER_YEAR', date('Y')));
 define('FOOTER_EMAIL', env('FOOTER_EMAIL', 'geral@empresa.pt'));

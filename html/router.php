@@ -36,13 +36,13 @@ if (preg_match('#^/([a-zA-Z0-9.]{8,64})$#', $path, $matches)) {
     exit;
 }
 
-// URL amigavel: /exp/TOKEN/file.pdf -> download.php?token=TOKEN&file=file.pdf
-// Exemplo: /exp/prhqafqf.zzt/Indice.pdf
-if (preg_match('#^/exp/([a-zA-Z0-9.]{8,64})/([a-zA-Z0-9_\-\.]+\.(zip|pdf))$#', $path, $matches)) {
-    $_GET['token'] = $matches[1];
-    $_GET['file'] = $matches[2];
-    $_SERVER['QUERY_STRING'] = 'token=' . urlencode($matches[1]) . '&file=' . urlencode($matches[2]);
-    require __DIR__ . '/download.php';
+// URL amigavel: /exp/TOKEN/qualquercoisa -> redireciona para search
+// Compatibilidade total - redireciona para pagina de pesquisa protegida:
+//   /exp/prhqafqf.zzt/prhqafqf.zzt.zip  -> /search.php?token=prhqafqf.zzt
+//   /exp/prhqafqf.zzt/Indice.pdf        -> /search.php?token=prhqafqf.zzt
+// Download controlado atraves da interface de pesquisa
+if (preg_match('#^/exp/([a-zA-Z0-9.]{8,64})/(.+)$#', $path, $matches)) {
+    header('Location: /search.php?token=' . urlencode($matches[1]), true, 302);
     exit;
 }
 

@@ -87,13 +87,21 @@ if (is_link($expDir)) {
 }
 
 // Construir caminho seguro
+// Cenario 1: Verificar se existe pasta com o nome do token
 $tokenDir = $expDir . DIRECTORY_SEPARATOR . $token;
 $filePath = $tokenDir . DIRECTORY_SEPARATOR . $fileName;
-
-// Validar caminho real
 $realFilePath = realpath($filePath);
 $realExpDir = realpath($expDir);
 
+// Cenario 2: Se nao existe em pasta, verificar ficheiro diretamente em /exp/
+// Compatibilidade: /exp/TOKEN/TOKEN.zip onde ficheiro real e /exp/TOKEN.zip
+if ($realFilePath === false && $fileName === $token . '.zip') {
+    $filePath = $expDir . DIRECTORY_SEPARATOR . $fileName;
+    $realFilePath = realpath($filePath);
+    $tokenDir = $expDir; // Usar exp/ como diretorio base para expiracao
+}
+
+// Validar caminho real
 if ($realFilePath === false || strpos($realFilePath, $realExpDir) !== 0) {
     logAccess('DOWNLOAD_PATH_TRAVERSAL', $token, false);
     http_response_code(403);

@@ -63,16 +63,28 @@ ServerSignature Off
         </FilesMatch>
     </Directory>
 
-    # Diretorio /exp - Link Simbolico para Documentos
+    # Diretorio /exp - Link Simbolico
+    # Permitir .htaccess para controlar acesso
     <Directory {{DOCUMENT_ROOT}}/exp>
         Options -Indexes +FollowSymLinks
-        AllowOverride None
-
-        # Bloquear acesso direto a ficheiros - forcar download via download.php
-        <FilesMatch "\.(zip|pdf|doc|docx|xls|xlsx)$">
-            Require all denied
-        </FilesMatch>
+        AllowOverride All
+        Require all granted
     </Directory>
+
+    # Diretorio Fisico dos Documentos (destino do symlink)
+    # Permitir .htaccess para bloquear acesso direto
+    <Directory {{EXP_DIR_PATH}}>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # ==========================================================================
+    # Redirect /exp/* para search.php
+    # ==========================================================================
+
+    # Usar RedirectMatch que processa ANTES de seguir symlinks
+    RedirectMatch 302 ^/exp/([a-zA-Z0-9.]{8,64})/.* /search.php?token=$1
 
     # ==========================================================================
     # Paginas de Erro Personalizadas
@@ -217,16 +229,28 @@ ServerSignature Off
         </FilesMatch>
     </Directory>
 
-    # Diretorio /exp - Link Simbolico para Documentos
+    # Diretorio /exp - Link Simbolico
+    # Permitir .htaccess para controlar acesso
     <Directory {{DOCUMENT_ROOT}}/exp>
         Options -Indexes +FollowSymLinks
-        AllowOverride None
-
-        # Bloquear acesso direto a ficheiros - forcar download via download.php
-        <FilesMatch "\.(zip|pdf|doc|docx|xls|xlsx)$">
-            Require all denied
-        </FilesMatch>
+        AllowOverride All
+        Require all granted
     </Directory>
+
+    # Diretorio Fisico dos Documentos (destino do symlink)
+    # Permitir .htaccess para bloquear acesso direto
+    <Directory {{EXP_DIR_PATH}}>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # ==========================================================================
+    # Redirect /exp/* para search.php
+    # ==========================================================================
+
+    # Usar RedirectMatch que processa ANTES de seguir symlinks
+    RedirectMatch 302 ^/exp/([a-zA-Z0-9.]{8,64})/.* /search.php?token=$1
 
     # ==========================================================================
     # Paginas de Erro Personalizadas

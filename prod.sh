@@ -3,7 +3,7 @@
 # Script de Instalacao - Producao
 # Sistema de Consulta de Processos
 # Uso: sudo ./prod.sh
-# Versao 3.0
+# Versao 3.1
 ################################################################################
 
 set -e
@@ -23,7 +23,7 @@ WEB_GROUP="www-data"
 # Banner
 echo -e "${BLUE}==================================================================${NC}"
 echo -e "${BLUE}  Instalacao em Producao${NC}"
-echo -e "${BLUE}  Sistema de Consulta de Processos - v3.0${NC}"
+echo -e "${BLUE}  Sistema de Consulta de Processos - v3.1${NC}"
 echo -e "${BLUE}==================================================================${NC}"
 echo ""
 
@@ -200,6 +200,14 @@ if [ -L "$DOCUMENT_ROOT/exp" ]; then
 fi
 ln -sf "$EXP_DIR_PATH" "$DOCUMENT_ROOT/exp"
 echo -e "${GREEN}  OK Link simbolico: $DOCUMENT_ROOT/exp -> $EXP_DIR_PATH${NC}"
+
+# Copiar .htaccess para diretorio de documentos (bloquear acesso direto)
+if [ -f "$PROJECT_DIR/exp.htaccess" ]; then
+    cp "$PROJECT_DIR/exp.htaccess" "$EXP_DIR_PATH/.htaccess"
+    chmod 644 "$EXP_DIR_PATH/.htaccess"
+    chown $WEB_USER:$WEB_GROUP "$EXP_DIR_PATH/.htaccess"
+    echo -e "${GREEN}  OK .htaccess copiado para $EXP_DIR_PATH${NC}"
+fi
 
 # Criar diretorios necessarios
 mkdir -p "$DOCUMENT_ROOT/data"

@@ -9,7 +9,7 @@
  * Uso: php generate-config.php [--output=/caminho/saida.conf]
  *
  * @author @mjvmst
- * @version v3.0
+ * @version v3.1
  */
 
 // Configuracao
